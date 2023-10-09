@@ -25,5 +25,6 @@ namespace SnikeGame
         public int DirectionY { get; set; } = 0;
 
         public bool IsHead { get; set; } = false;
+        public bool IsAss { get; set; } = false;
     }
 }

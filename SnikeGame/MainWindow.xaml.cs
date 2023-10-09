@@ -98,9 +98,7 @@ namespace SnikeGame
 
             DrawEssences();
 
-            GameArea.Children.Add(Snake.UiElement);
-            Canvas.SetTop(Snake.UiElement, Snake.Y);
-            Canvas.SetLeft(Snake.UiElement, Snake.X);
+            AddGameArenaSnakes();
         }
 
         private void DrawGameArea()
@@ -259,19 +257,13 @@ namespace SnikeGame
 
         #region изменение скорости змейки
         private void TurtleSpeedSnake(object sender, RoutedEventArgs e)
-        {
-            TimerStart(300);
-        }
+            => TimerStart(250);
 
-        private void DogSpeedSnake(object sender, RoutedEventArgs e)
-        {
-            TimerStart(150);
-        }
+        private void DogSpeedSnake(object sender, RoutedEventArgs e) 
+            => TimerStart(150);
 
-        private void BunnySpeedSnake(object sender, RoutedEventArgs e)
-        {
-            TimerStart(40);
-        }
+        private void BunnySpeedSnake(object sender, RoutedEventArgs e) 
+            => TimerStart(50);
         #endregion
     }
 }

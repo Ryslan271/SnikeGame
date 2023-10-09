@@ -25,7 +25,7 @@
                     Click="TurtleSpeedSnake">
                     <Button.Content>
                         <Border CornerRadius="2">
-                            <Image Source="Images\\turtle.png" />
+                            <Image Source="/Images/turtle.png" />
                         </Border>
                     </Button.Content>
                 </Button>
@@ -36,7 +36,7 @@
                     Click="DogSpeedSnake">
                     <Button.Content>
                         <Border CornerRadius="2">
-                            <Image Source="Images\\dog.png" />
+                            <Image Source="/Images/dog.png" />
                         </Border>
                     </Button.Content>
                 </Button>
@@ -47,7 +47,7 @@
                     Click="BunnySpeedSnake">
                     <Button.Content>
                         <Border CornerRadius="2">
-                            <Image Source="Images\\bunnySpeed.png" />
+                            <Image Source="/Images/bunnySpeed.png" />
                         </Border>
                     </Button.Content>
                 </Button>
