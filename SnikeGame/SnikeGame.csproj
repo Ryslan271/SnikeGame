@@ -57,6 +57,7 @@
     </ApplicationDefinition>
     <Compile Include="EatElement.cs" />
     <Compile Include="SnakePart.cs" />
+    <Compile Include="TrafficSide.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

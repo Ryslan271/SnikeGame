@@ -1,10 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Timers;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 
 namespace SnikeGame
 {
@@ -18,19 +22,74 @@ namespace SnikeGame
         private List<EatElement> EatElements = new List<EatElement>();
         private List<SnakePart> Snakes = new List<SnakePart>();
 
+        private TrafficSide DirectionMovement = TrafficSide.Right;
+
         private List<SnakePart> SnakesTemporary = new List<SnakePart>();
         private List<EatElement> EatElementTemporary = new List<EatElement>();
 
         private Random rnd = new Random();
 
-        private SnakePart Snake = new SnakePart() { IsHead = true};
+        private SnakePart Snake = new SnakePart() { IsHead = true };
 
         public MainWindow()
         {
             Snakes.Add(Snake);
 
             InitializeComponent();
+
+            TimerStart();
         }
+
+        #region Таймер движения
+        private void TimerStart()
+        {
+            DispatcherTimer timer = new DispatcherTimer();
+            timer.Tick += new EventHandler(timer_Tick);
+            timer.Interval = new TimeSpan(0, 0, 0, 0, 300);
+            timer.Start();
+        }
+
+        private void timer_Tick(object sender, EventArgs e)
+        {
+            for (int i = 0; i < Snakes.Count; i++)
+            {
+                if (i != 0)
+                {
+                    Snakes[i].SnakeX = Snakes[i].X;
+                    Snakes[i].SnakeY = Snakes[i].Y;
+
+                    Snakes[i].X = Snakes[i - 1].SnakeX;
+                    Snakes[i].Y = Snakes[i - 1].SnakeY;
+
+                    continue;
+                }
+
+                Snakes[i].SnakeX = Snakes[i].X;
+                Snakes[i].SnakeY = Snakes[i].Y;
+
+                switch (DirectionMovement)
+                {
+                    case TrafficSide.Right:
+                        Snakes[i].X += SnakeSquareSize;
+                        break;
+
+                    case TrafficSide.Left:
+                        Snakes[i].X -= SnakeSquareSize;
+                        break;
+
+                    case TrafficSide.Top:
+                        Snakes[i].Y -= SnakeSquareSize;
+                        break;
+
+                    case TrafficSide.Bottom:
+                        Snakes[i].Y += SnakeSquareSize;
+                        break;
+                }
+            }
+
+            RenderingHelperMethodForDrawing();
+        }
+        #endregion
 
         private void Window_ContentRendered(object sender, EventArgs e)
         {
@@ -82,14 +141,21 @@ namespace SnikeGame
 
         private void DrawEssences()
         {
-            int countEssences = rnd.Next(10, 15);
+            if (QuantityCheckEatInDameArena())
+                return;
 
-            while (countEssences >= 0)
+            int essencesX = rnd.Next(1, 20);
+            int essencesY = rnd.Next(1, 20);
+
+            while (true)
             {
+                if (ValidateSnakeAndEatPosition(essencesX, essencesY))
+                    continue;
+
                 EatElement essence = new EatElement()
                 {
-                    Y = rnd.Next(1, 20) * 20,
-                    X = rnd.Next(1, 20) * 20
+                    Y = essencesX * 20,
+                    X = essencesY * 20
                 };
 
                 EatElements.Add(essence);
@@ -97,59 +163,38 @@ namespace SnikeGame
                 GameArea.Children.Add(essence.UiElement);
                 Canvas.SetTop(essence.UiElement, essence.Y);
                 Canvas.SetLeft(essence.UiElement, essence.X);
-                countEssences--;
+
+                break;
             }
         }
 
+        private bool ValidateSnakeAndEatPosition(int eatX, int eatY) =>
+            Snakes.FirstOrDefault(snakeElement => snakeElement.SnakeX == eatX * 20 && snakeElement.SnakeY == eatY * 20) != null;
+
+        private bool QuantityCheckEatInDameArena() =>
+            EatElements.Count() >= 1;
+
         private void Window_KeyDown(object sender, KeyEventArgs e)
         {
-            for (int i = 0; i < Snakes.Count; i++)
+
+            switch (e.Key)
             {
-                if (i == 0)
-                {
-                    Snakes[i].SnakeX = Snakes[i].X;
-                    Snakes[i].SnakeY = Snakes[i].Y;
+                case Key.D:
+                    DirectionMovement = TrafficSide.Right;
+                    break;
 
-                    switch (e.Key)
-                    {
-                        case Key.D:
-                            Snakes[i].X += SnakeSquareSize;
-                            break;
+                case Key.A:
+                    DirectionMovement = TrafficSide.Left;
+                    break;
 
-                        case Key.A:
-                            Snakes[i].X -= SnakeSquareSize;
-                            break;
+                case Key.W:
+                    DirectionMovement = TrafficSide.Top;
+                    break;
 
-                        case Key.W:
-                            Snakes[i].Y -= SnakeSquareSize;
-                            break;
-
-                        case Key.S:
-                            Snakes[i].Y += SnakeSquareSize;
-                            break;
-                    }
-                }
-                else
-                {
-                    Snakes[i].SnakeX = Snakes[i].X;
-                    Snakes[i].SnakeY = Snakes[i].Y;
-
-                    Snakes[i].X = Snakes[i - 1].SnakeX;
-                    Snakes[i].Y = Snakes[i - 1].SnakeY;
-                }
+                case Key.S:
+                    DirectionMovement = TrafficSide.Bottom;
+                    break;
             }
-
-            SnakesTemporary = new List<SnakePart>();
-            EatElementTemporary = new List<EatElement>();
-
-            ValidateEatElementSnakes();
-
-            Snakes.AddRange(SnakesTemporary);
-
-            foreach (var item in EatElementTemporary)
-                EatElements.Remove(item);
-
-            AddGameArenaSnakes();
         }
 
         private void AddGameArenaSnakes()
@@ -161,6 +206,22 @@ namespace SnikeGame
                 Canvas.SetTop(snakeItem.UiElement, snakeItem.Y);
                 Canvas.SetLeft(snakeItem.UiElement, snakeItem.X);
             }
+        }
+
+        private void RenderingHelperMethodForDrawing()
+        {
+            SnakesTemporary = new List<SnakePart>();
+            EatElementTemporary = new List<EatElement>();
+
+            ValidateEatElementSnakes();
+
+            Snakes.AddRange(SnakesTemporary);
+
+            foreach (var item in EatElementTemporary)
+                EatElements.Remove(item);
+
+            AddGameArenaSnakes();
+            DrawEssences();
         }
 
         private void ValidateEatElementSnakes()
