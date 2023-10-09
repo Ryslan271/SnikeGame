@@ -24,6 +24,8 @@ namespace SnikeGame
 
         private TrafficSide DirectionMovement = TrafficSide.Right;
 
+        private DispatcherTimer timer = new DispatcherTimer();
+
         private List<SnakePart> SnakesTemporary = new List<SnakePart>();
         private List<EatElement> EatElementTemporary = new List<EatElement>();
 
@@ -37,15 +39,14 @@ namespace SnikeGame
 
             InitializeComponent();
 
-            TimerStart();
+            timer.Tick += new EventHandler(timer_Tick);
+            TimerStart(300);
         }
 
         #region Таймер движения
-        private void TimerStart()
+        private void TimerStart(int milliseconds = default)
         {
-            DispatcherTimer timer = new DispatcherTimer();
-            timer.Tick += new EventHandler(timer_Tick);
-            timer.Interval = new TimeSpan(0, 0, 0, 0, 300);
+            timer.Interval = new TimeSpan(0, 0, 0, 0, milliseconds);
             timer.Start();
         }
 
@@ -226,24 +227,51 @@ namespace SnikeGame
 
         private void ValidateEatElementSnakes()
         {
-            foreach (EatElement item in EatElements)
+            foreach (EatElement eatItem in EatElements)
             {
-                foreach (SnakePart snakeItem in Snakes)
+                if (eatItem.Y == Snakes[0].Y &&
+                    eatItem.X == Snakes[0].X)
                 {
-                    if (item.Y == snakeItem.Y &&
-                        item.X == snakeItem.X)
+                    for (int i = 0; i < CountingQuantity(eatItem); i++)
                     {
                         SnakesTemporary.Add(new SnakePart
                         {
-                            X = item.X,
-                            Y = item.Y
+                            X = eatItem.X,
+                            Y = eatItem.Y
                         });
-
-                        EatElementTemporary.Add(item);
-                        GameArea.Children.Remove(item.UiElement);
                     }
+
+                    EatElementTemporary.Add(eatItem);
+                    GameArea.Children.Remove(eatItem.UiElement);
                 }
             }
         }
+
+        private int CountingQuantity(EatElement eatItem)
+        {
+            if (eatItem.Fill == Brushes.Red)
+                return 1;
+            else if (eatItem.Fill == Brushes.Blue)
+                return 2;
+            else
+                return 3;
+        }
+
+        #region изменение скорости змейки
+        private void TurtleSpeedSnake(object sender, RoutedEventArgs e)
+        {
+            TimerStart(300);
+        }
+
+        private void DogSpeedSnake(object sender, RoutedEventArgs e)
+        {
+            TimerStart(150);
+        }
+
+        private void BunnySpeedSnake(object sender, RoutedEventArgs e)
+        {
+            TimerStart(40);
+        }
+        #endregion
     }
 }
