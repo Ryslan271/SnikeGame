@@ -19,18 +19,17 @@ namespace SnikeGame
     {
         private const int SnakeSquareSize = 20;
 
-        private List<EatElement> EatElements = new List<EatElement>();
-        private List<SnakePart> Snakes = new List<SnakePart>();
+        private EatElement EatElements = null;
 
         private TrafficSide DirectionMovement = TrafficSide.Right;
 
         private DispatcherTimer timer = new DispatcherTimer();
 
         private List<SnakePart> SnakesTemporary = new List<SnakePart>();
-        private List<EatElement> EatElementTemporary = new List<EatElement>();
 
         private Random rnd = new Random();
 
+        private List<SnakePart> Snakes = new List<SnakePart>();
         private SnakePart Snake = new SnakePart() { IsHead = true };
 
         public MainWindow()
@@ -140,7 +139,7 @@ namespace SnikeGame
 
         private void DrawEssences()
         {
-            if (QuantityCheckEatInDameArena())
+            if (EatElements != null)
                 return;
 
             int essencesX = rnd.Next(1, 20);
@@ -157,7 +156,7 @@ namespace SnikeGame
                     X = essencesY * 20
                 };
 
-                EatElements.Add(essence);
+                EatElements = essence;
 
                 GameArea.Children.Add(essence.UiElement);
                 Canvas.SetTop(essence.UiElement, essence.Y);
@@ -169,9 +168,6 @@ namespace SnikeGame
 
         private bool ValidateSnakeAndEatPosition(int eatX, int eatY) =>
             Snakes.FirstOrDefault(snakeElement => snakeElement.SnakeX == eatX * 20 && snakeElement.SnakeY == eatY * 20) != null;
-
-        private bool QuantityCheckEatInDameArena() =>
-            EatElements.Count() >= 1;
 
         private void Window_KeyDown(object sender, KeyEventArgs e)
         {
@@ -210,14 +206,10 @@ namespace SnikeGame
         private void RenderingHelperMethodForDrawing()
         {
             SnakesTemporary = new List<SnakePart>();
-            EatElementTemporary = new List<EatElement>();
 
             ValidateEatElementSnakes();
 
             Snakes.AddRange(SnakesTemporary);
-
-            foreach (var item in EatElementTemporary)
-                EatElements.Remove(item);
 
             AddGameArenaSnakes();
             DrawEssences();
@@ -225,23 +217,20 @@ namespace SnikeGame
 
         private void ValidateEatElementSnakes()
         {
-            foreach (EatElement eatItem in EatElements)
+            if (EatElements.Y == Snakes[0].Y &&
+                EatElements.X == Snakes[0].X)
             {
-                if (eatItem.Y == Snakes[0].Y &&
-                    eatItem.X == Snakes[0].X)
+                for (int i = 0; i < CountingQuantity(EatElements); i++)
                 {
-                    for (int i = 0; i < CountingQuantity(eatItem); i++)
+                    SnakesTemporary.Add(new SnakePart
                     {
-                        SnakesTemporary.Add(new SnakePart
-                        {
-                            X = eatItem.X,
-                            Y = eatItem.Y
-                        });
-                    }
-
-                    EatElementTemporary.Add(eatItem);
-                    GameArea.Children.Remove(eatItem.UiElement);
+                        X = EatElements.X,
+                        Y = EatElements.Y
+                    });
                 }
+
+                GameArea.Children.Remove(EatElements.UiElement);
+                EatElements = null;
             }
         }
 
