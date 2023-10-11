@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
-using System.Timers;
+using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -23,14 +22,12 @@ namespace SnikeGame
 
         private TrafficSide DirectionMovement = TrafficSide.Right;
 
-        private DispatcherTimer timer = new DispatcherTimer();
+        private readonly DispatcherTimer timer = new DispatcherTimer();
 
-        private List<SnakePart> SnakesTemporary = new List<SnakePart>();
+        private readonly Random rnd = new Random();
 
-        private Random rnd = new Random();
-
-        private List<SnakePart> Snakes = new List<SnakePart>();
-        private SnakePart Snake = new SnakePart() { IsHead = true };
+        private readonly List<SnakePart> Snakes = new List<SnakePart>();
+        private readonly SnakePart Snake = new SnakePart() { IsHead = true };
 
         public MainWindow()
         {
@@ -53,19 +50,17 @@ namespace SnikeGame
         {
             for (int i = 0; i < Snakes.Count; i++)
             {
+                Snakes[i].SnakeX = Snakes[i].X;
+                Snakes[i].SnakeY = Snakes[i].Y;
+                
                 if (i != 0)
                 {
-                    Snakes[i].SnakeX = Snakes[i].X;
-                    Snakes[i].SnakeY = Snakes[i].Y;
 
                     Snakes[i].X = Snakes[i - 1].SnakeX;
                     Snakes[i].Y = Snakes[i - 1].SnakeY;
 
                     continue;
                 }
-
-                Snakes[i].SnakeX = Snakes[i].X;
-                Snakes[i].SnakeY = Snakes[i].Y;
 
                 switch (DirectionMovement)
                 {
@@ -98,6 +93,8 @@ namespace SnikeGame
             DrawEssences();
 
             AddGameArenaSnakes();
+
+            MoveSnakes();
         }
 
         private void DrawGameArea()
@@ -124,12 +121,13 @@ namespace SnikeGame
 
                 nextIsOdd = !nextIsOdd;
                 nextX += SnakeSquareSize;
+
                 if (nextX >= GameArea.ActualWidth)
                 {
                     nextX = 0;
                     nextY += SnakeSquareSize;
                     rowCounter++;
-                    nextIsOdd = (rowCounter % 2 != 0);
+                    nextIsOdd = rowCounter % 2 != 0;
                 }
 
                 if (nextY >= GameArea.ActualHeight)
@@ -140,7 +138,9 @@ namespace SnikeGame
         private void DrawEssences()
         {
             if (EatElements != null)
+            {
                 return;
+            }
 
             int essencesX = rnd.Next(1, 20);
             int essencesY = rnd.Next(1, 20);
@@ -148,7 +148,9 @@ namespace SnikeGame
             while (true)
             {
                 if (ValidateSnakeAndEatPosition(essencesX, essencesY))
+                {
                     continue;
+                }
 
                 EatElement essence = new EatElement()
                 {
@@ -166,12 +168,11 @@ namespace SnikeGame
             }
         }
 
-        private bool ValidateSnakeAndEatPosition(int eatX, int eatY) =>
-            Snakes.FirstOrDefault(snakeElement => snakeElement.SnakeX == eatX * 20 && snakeElement.SnakeY == eatY * 20) != null;
+        private bool ValidateSnakeAndEatPosition(int eatX, int eatY)
+            => Snakes.FirstOrDefault(snakeElement => snakeElement.SnakeX == eatX && snakeElement.SnakeY == eatY) != null;
 
         private void Window_KeyDown(object sender, KeyEventArgs e)
         {
-
             switch (e.Key)
             {
                 case Key.D:
@@ -194,10 +195,17 @@ namespace SnikeGame
 
         private void AddGameArenaSnakes()
         {
-            foreach (var snakeItem in Snakes)
+            // Проверка на количество элементов змейки на поле и последующее их добавление 
+            if (Snakes.Count > GameArea.Children.Count - 401)
+                for (int i = 0; i < Snakes.Count - (GameArea.Children.Count - 401); i++)
+                    GameArea.Children.Add(Snakes[Snakes.IndexOf(Snakes.Last()) - i].UiElement);
+        }
+
+        private void MoveSnakes()
+        {
+            // движение клеток
+            foreach (SnakePart snakeItem in Snakes)
             {
-                GameArea.Children.Remove(snakeItem.UiElement);
-                GameArea.Children.Add(snakeItem.UiElement);
                 Canvas.SetTop(snakeItem.UiElement, snakeItem.Y);
                 Canvas.SetLeft(snakeItem.UiElement, snakeItem.X);
             }
@@ -205,14 +213,13 @@ namespace SnikeGame
 
         private void RenderingHelperMethodForDrawing()
         {
-            SnakesTemporary = new List<SnakePart>();
+            ValidateEatElementSnakes(); // проверка сьела ли змейка еду и добавление змейке новый элемент
 
-            ValidateEatElementSnakes();
+            AddGameArenaSnakes(); // добавление нового элемента змейки на поле
 
-            Snakes.AddRange(SnakesTemporary);
+            MoveSnakes(); //  движение всех элементов змеки
 
-            AddGameArenaSnakes();
-            DrawEssences();
+            DrawEssences(); // добавление новой еды на поле
         }
 
         private void ValidateEatElementSnakes()
@@ -220,38 +227,40 @@ namespace SnikeGame
             if (EatElements.Y == Snakes[0].Y &&
                 EatElements.X == Snakes[0].X)
             {
+                GameArea.Children.Remove(EatElements.UiElement);
+
                 for (int i = 0; i < CountingQuantity(EatElements); i++)
                 {
-                    SnakesTemporary.Add(new SnakePart
+                    SnakePart newSnake = new SnakePart
                     {
                         X = EatElements.X,
                         Y = EatElements.Y
-                    });
+                    };
+
+                    Snakes.Add(newSnake);
                 }
 
-                GameArea.Children.Remove(EatElements.UiElement);
                 EatElements = null;
             }
         }
 
+        // Определяет количество элементов добавляющихся в змейку от цвета еды
         private int CountingQuantity(EatElement eatItem)
         {
             if (eatItem.Fill == Brushes.Red)
                 return 1;
-            else if (eatItem.Fill == Brushes.Blue)
-                return 2;
             else
-                return 3;
+                return eatItem.Fill == Brushes.Blue ? 2 : 3;
         }
 
         #region изменение скорости змейки
         private void TurtleSpeedSnake(object sender, RoutedEventArgs e)
             => TimerStart(250);
 
-        private void DogSpeedSnake(object sender, RoutedEventArgs e) 
+        private void DogSpeedSnake(object sender, RoutedEventArgs e)
             => TimerStart(150);
 
-        private void BunnySpeedSnake(object sender, RoutedEventArgs e) 
+        private void BunnySpeedSnake(object sender, RoutedEventArgs e)
             => TimerStart(50);
         #endregion
     }
